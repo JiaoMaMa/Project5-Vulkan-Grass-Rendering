@@ -15,8 +15,8 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     // TODO: Compute fragment color
-    const vec3 lightDir = normalize(vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2])); 
-    const float diffuse = max(dot(nor, lightDir), 0.f);
+    const vec3 lightDir = normalize(vec3(transpose(camera.view)[2].xyz)); 
+    const float diffuse = abs(dot(nor, lightDir));
 
     // albedo, let grass be lighter at the tip
     const vec3 topColor = vec3(0.1f, 0.8f, 0.1f);

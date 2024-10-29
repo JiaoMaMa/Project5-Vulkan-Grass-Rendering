@@ -4,8 +4,14 @@
 #define WORKGROUP_SIZE 32
 #define GRAVITY -4.8
 #define ORIENTATION_CULLING 1
+#define ORIENTATION_CULLING_THRESHOLD 0.9
 #define VIEW_FRUSTRUM_CULLING 1
+#define VIEW_FRUSTRUM_CULLING_TOLERANCE -0.01
 #define DISTANCE_CULLING 1
+#define DISTANCE_CULLING_FREQUENCY 5
+#define DISTANCE_CULLING_MAX 20.0
+
+#define ENABLE_CULLING_Z 0
 
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -60,6 +66,15 @@ bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
+bool inViewFrustrum(const vec3 p){
+    const vec4 pPrime = camera.proj * camera.view * vec4(p, 1.f);
+    const float h = pPrime.w + VIEW_FRUSTRUM_CULLING_TOLERANCE;
+#if ENABLE_CULLING_Z
+    return (inBounds(pPrime.x, h) && inBounds(pPrime.y, h) && inBounds(pPrime.z, h));
+#endif
+    return (inBounds(pPrime.x, h) && inBounds(pPrime.y, h));
+}
+
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
@@ -91,7 +106,7 @@ void main() {
     const vec3 r = (iv2 - v2) * stiffness;
 
     // Wind
-    const vec3 wind = vec3(5.f, -2.f, 5.f) * 0.5f * (sin(0.5f * totalTime) + cos(0.25f * totalTime + 123.f) + 1.f);
+    const vec3 wind = vec3(5.f, -2.f, 5.f) * 0.5f * (sin(0.75f * totalTime) + cos(0.5f * totalTime + 123.f) + 1.f);
     const float dirAlignment = 1.f - abs(dot(normalize(wind), normalize(v2 - v0)));
     const float hAlignment = dot(v2 - v0, up) / height;
     const vec3 w = wind * dirAlignment * hAlignment;
@@ -118,6 +133,29 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+    const vec3 cameraPos = inverse(camera.view)[3].xyz;
+#if ORIENTATION_CULLING
+    const vec3 dirc = normalize(cameraPos - v0);
+    const vec3 dirb = normalize(orientationDir);
+    if (abs(dot(dirc, dirb)) > ORIENTATION_CULLING_THRESHOLD){
+        return;
+    }
+#endif
+
+#if VIEW_FRUSTRUM_CULLING
+    const vec3 m = 0.25f * v0 + 0.5f * v1 + 0.25f * v2;
+    if (!inViewFrustrum(v0) && !inViewFrustrum(v2) && !inViewFrustrum(m)){
+        return;
+    }
+#endif
+
+#if DISTANCE_CULLING
+    const float dproj = length(v0 - cameraPos - up * dot((v0 - cameraPos), up));
+    if (mod(gl_GlobalInvocationID.x, DISTANCE_CULLING_FREQUENCY) > floor(DISTANCE_CULLING_FREQUENCY * (1.f - dproj/DISTANCE_CULLING_MAX))){
+        return;
+    }
+#endif
+
     const uint idx = atomicAdd(numBlades.vertexCount, 1);
     culledBlades[idx] = inputBlades[gl_GlobalInvocationID.x];
 }

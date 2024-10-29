@@ -1,9 +1,11 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#define TESSELATION_LEVEL 6
-
 layout(vertices = 1) out;
+
+#define TESSELATION_LEVEL_MIN 1.0
+#define TESSELATION_LEVEL_MAX 10.0
+#define TESSELATION_DIST 20.0
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
@@ -21,6 +23,12 @@ layout(location = 1) out vec4 v1_es[];
 layout(location = 2) out vec4 v2_es[];
 layout(location = 3) out vec4 up_es[];
 
+
+int getTessLevel(float distance)
+{
+    return int(mix(TESSELATION_LEVEL_MIN, TESSELATION_LEVEL_MAX, max(0.f, (TESSELATION_DIST - distance)) / TESSELATION_DIST));
+}
+
 void main() {
 	// Don't move the origin location of the patch
     gl_out[gl_InvocationID].gl_Position = v0_cs[gl_InvocationID];
@@ -32,6 +40,8 @@ void main() {
     up_es[gl_InvocationID] = up_cs[gl_InvocationID];
 
 	// TODO: Set level of tesselation
+    const vec3 cameraPos = inverse(camera.view)[3].xyz;
+    const int TESSELATION_LEVEL = getTessLevel(distance(v0_cs[gl_InvocationID].xyz, cameraPos));
     gl_TessLevelInner[0] = TESSELATION_LEVEL;
     gl_TessLevelInner[1] = TESSELATION_LEVEL;
     gl_TessLevelOuter[0] = TESSELATION_LEVEL;
