@@ -106,7 +106,7 @@ void main() {
     const vec3 r = (iv2 - v2) * stiffness;
 
     // Wind
-    const vec3 wind = vec3(5.f, -2.f, 5.f) * 0.5f * (sin(0.75f * totalTime) + cos(0.5f * totalTime + 123.f) + 1.f);
+    const vec3 wind = vec3(5.f, -2.f, 5.f) * 0.5f * (sin(0.7f * totalTime) + cos(0.25f * totalTime + 123.f) + 1.f);
     const float dirAlignment = 1.f - abs(dot(normalize(wind), normalize(v2 - v0)));
     const float hAlignment = dot(v2 - v0, up) / height;
     const vec3 w = wind * dirAlignment * hAlignment;
