@@ -30,12 +30,14 @@ void Scene::UpdateTime() {
     startTime = currentTime;
 
     time.deltaTime = nextDeltaTime.count();
+
+    count++;
+
+    avgFPS = float(count) / time.totalTime;
     if (count % 1000 == 0 && count != 0)
     {
-        std::cout << avgFPS/count << std::endl;
+        std::cout << avgFPS << std::endl;
     }
-    count++;
-    avgFPS += 1.f / time.deltaTime;
 
     time.totalTime += time.deltaTime;
 
