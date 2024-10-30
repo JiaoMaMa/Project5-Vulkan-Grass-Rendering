@@ -4,8 +4,8 @@
 layout(vertices = 1) out;
 
 #define TESSELATION_LEVEL_MIN 1.0
-#define TESSELATION_LEVEL_MAX 10.0
-#define TESSELATION_DIST 20.0
+#define TESSELATION_LEVEL_MAX 15.0
+#define TESSELATION_DIST 30.0
 
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
